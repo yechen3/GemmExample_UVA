@@ -6,7 +6,7 @@ um_B="RM"
 um_C="UM"
 
 # problem size
-NI="20480"
+NI="2048"
 
 [ ! -e "bin" ] && mkdir "bin"
 

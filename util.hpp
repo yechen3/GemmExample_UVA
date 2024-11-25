@@ -226,8 +226,26 @@ void set_um_policy(const void *devPtr, size_t count, enum um_policy policy, int 
 
 cudaError_t MYcudaMallocManaged(void **devPtr, size_t size, enum um_policy policy=UM, int cnt_GPU=1)
 {
-    CUDA_RUNTIME(cudaMallocManaged(devPtr, size));
-    set_um_policy(*devPtr, size, policy, cnt_GPU);
+    CUDA_RUNTIME(cudaMalloc(devPtr, size));
+    //set_um_policy(*devPtr, size, policy, cnt_GPU);
+    return cudaSuccess;
+}
+
+cudaError_t MycudaMemcpy(void *devPtr, void *hostPtr, size_t size) 
+{
+    CUDA_RUNTIME(cudaMemcpy(devPtr, hostPtr, size, cudaMemcpyDefault));
+    printf("Memcpy form %p to %p\n", hostPtr, devPtr);
+    return cudaSuccess;
+}
+
+cudaError_t EnablePeerAccess(int __n)
+{
+    for(int i=0; i<__n; i++) {
+        for(int j=0; j<__n; j++) {
+            if (i==j) continue;
+            cudaDeviceEnablePeerAccess(i, j);
+        }
+    }
     return cudaSuccess;
 }
 

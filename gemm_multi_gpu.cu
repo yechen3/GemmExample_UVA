@@ -69,7 +69,7 @@ void init(DATA_TYPE *A, DATA_TYPE *B, DATA_TYPE *C, DATA_TYPE *A_gpu, DATA_TYPE 
             for (j = 0; j < NK; j++)
 		{
                     A[i*NK + j] = ((DATA_TYPE) i*j) / NI;
-                    A_gpu[i*NK + j] = ((DATA_TYPE) i*j) / NI;
+                    //A_gpu[i*NK + j] = ((DATA_TYPE) i*j) / NI;
 		}
 	}
 
@@ -78,7 +78,7 @@ void init(DATA_TYPE *A, DATA_TYPE *B, DATA_TYPE *C, DATA_TYPE *A_gpu, DATA_TYPE 
             for (j = 0; j < NJ; j++)
 		{
                     B[i*NJ + j] = ((DATA_TYPE) i*j + 1) / NJ;
-                    B_gpu[i*NJ + j] = ((DATA_TYPE) i*j + 1) / NJ;
+                    //B_gpu[i*NJ + j] = ((DATA_TYPE) i*j + 1) / NJ;
 		}
 	}
 
@@ -87,7 +87,7 @@ void init(DATA_TYPE *A, DATA_TYPE *B, DATA_TYPE *C, DATA_TYPE *A_gpu, DATA_TYPE 
             for (j = 0; j < NJ; j++)
 		{
                     C[i*NJ + j] = ((DATA_TYPE) i*j + 2) / NJ;
-                    C_gpu[i*NJ + j] = ((DATA_TYPE) i*j + 2) / NJ;
+                    //C_gpu[i*NJ + j] = ((DATA_TYPE) i*j + 2) / NJ;
 		}
 	}
 }
@@ -172,6 +172,7 @@ int main(int argc, char *argv[])
     DATA_TYPE* A;
     DATA_TYPE* B;  
     DATA_TYPE* C; 
+    DATA_TYPE* C_gpu_host; 
     DATA_TYPE *A_gpu;
     DATA_TYPE *B_gpu;
     DATA_TYPE *C_gpu; 
@@ -179,12 +180,17 @@ int main(int argc, char *argv[])
     A = (DATA_TYPE*)malloc(NI*NK*sizeof(DATA_TYPE)); 
     B = (DATA_TYPE*)malloc(NK*NJ*sizeof(DATA_TYPE));   
     C = (DATA_TYPE*)malloc(NI*NJ*sizeof(DATA_TYPE)); 
+    C_gpu_host = (DATA_TYPE*)malloc(NI*NJ*sizeof(DATA_TYPE)); 
 
     MYcudaMallocManaged((void **)&A_gpu, sizeof(DATA_TYPE) * NI * NK, @um_A@, __n);
     MYcudaMallocManaged((void **)&B_gpu, sizeof(DATA_TYPE) * NK * NJ, @um_B@, __n);
     MYcudaMallocManaged((void **)&C_gpu, sizeof(DATA_TYPE) * NI * NJ, @um_C@, __n);
 
     init(A, B, C, A_gpu, B_gpu, C_gpu);
+
+    MycudaMemcpy(A_gpu, A, sizeof(DATA_TYPE) * NI * NK);
+    MycudaMemcpy(B_gpu, B, sizeof(DATA_TYPE) * NK * NJ);
+    MycudaMemcpy(C_gpu, C, sizeof(DATA_TYPE) * NI * NJ);
 	
     // GPU_argv_init();
 	
@@ -195,7 +201,8 @@ int main(int argc, char *argv[])
     t_end = rtclock();
     fprintf(stdout, "CPU Runtime: %0.6lfs\n", t_end - t_start);
 	
-    compareResults(C, C_gpu);
+    MycudaMemcpy(C_gpu_host, C_gpu, sizeof(DATA_TYPE) * NI * NJ);
+    compareResults(C, C_gpu_host);
 
     free(A);
     free(B);  
