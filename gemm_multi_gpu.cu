@@ -187,6 +187,7 @@ int main(int argc, char *argv[])
     MYcudaMallocManaged((void **)&C_gpu, sizeof(DATA_TYPE) * NI * NJ, @um_C@, __n);
 
     init(A, B, C, A_gpu, B_gpu, C_gpu);
+    EnablePeerAccess(__n);
 
     MycudaMemcpy(A_gpu, A, sizeof(DATA_TYPE) * NI * NK);
     MycudaMemcpy(B_gpu, B, sizeof(DATA_TYPE) * NK * NJ);

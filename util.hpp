@@ -36,6 +36,7 @@
 
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <iostream>
 
 extern char **environ;
 
@@ -145,6 +146,7 @@ inline size_t THREADS_PER_KERNEL(dim3 __dim_block, dim3 __dim_thread) {
     cudaGetDevice(&__original_device);\
     for (int __i = 0; __i < __n; __i++) {\
         cudaSetDevice(__i);\
+        printf("Blocks : {%d, %d, %d} threads.\n", __fake_dim_block.x, __fake_dim_block.y, __fake_dim_block.z);\
         __kernel <<< __fake_dim_block, __dim_thread >>> (__VA_ARGS__ , __i, __dim_block) ; \
     }\
     cudaDeviceSynchronize();\
@@ -233,17 +235,19 @@ cudaError_t MYcudaMallocManaged(void **devPtr, size_t size, enum um_policy polic
 
 cudaError_t MycudaMemcpy(void *devPtr, void *hostPtr, size_t size) 
 {
+    cudaSetDevice(0);
     CUDA_RUNTIME(cudaMemcpy(devPtr, hostPtr, size, cudaMemcpyDefault));
     printf("Memcpy form %p to %p\n", hostPtr, devPtr);
     return cudaSuccess;
 }
 
-cudaError_t EnablePeerAccess(int __n)
+cudaError_t EnablePeerAccess(int n)
 {
-    for(int i=0; i<__n; i++) {
-        for(int j=0; j<__n; j++) {
+    for(int i=0; i<n; i++) {
+        for(int j=0; j<n; j++) {
             if (i==j) continue;
-            cudaDeviceEnablePeerAccess(i, j);
+            cudaSetDevice(i);
+            cudaDeviceEnablePeerAccess(j, 0);
         }
     }
     return cudaSuccess;
