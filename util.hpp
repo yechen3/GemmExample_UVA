@@ -40,8 +40,6 @@
 
 extern char **environ;
 
-enum um_policy {UM, PF, AB, AB_CPU, PL, PL_CPU, RM, PF_AB, PF_AB_CPU, PF_PL, PF_PL_CPU, PF_RM, UM_TERM};
-const char *um_policy_names[] = {"UM", "PF", "AB", "AB_CPU", "PL", "PL_CPU", "RM", "PF_AB", "PF_AB_CPU", "PF_PL", "PF_PL_CPU", "PF_RM", "UM_TERM"};
 
 // constexpr size_t tot_physical_mem = 11554717696;
 // constexpr int multiProcessorCount = USEABLE_SM_CNT;
@@ -142,6 +140,8 @@ inline size_t THREADS_PER_KERNEL(dim3 __dim_block, dim3 __dim_thread) {
 
 #define split_kernel(__kernel, __dim_block, __dim_thread, ...) do {\
     dim3 __fake_dim_block((BLOCKS_PER_KERNEL(__dim_block)) / __n + ((BLOCKS_PER_KERNEL(__dim_block) % __n == 0) ? 0 : 1)); \
+    printf("orig Blocks : {%d, %d, %d} threads %d gpus.\n", __dim_block.x, __dim_block.y, __dim_block.z, __n);\
+    std::cout<<size_t(__dim_block.y)<<"\n";\
     int __original_device;\
     cudaGetDevice(&__original_device);\
     for (int __i = 0; __i < __n; __i++) {\
@@ -160,76 +160,13 @@ inline size_t THREADS_PER_KERNEL(dim3 __dim_block, dim3 __dim_thread) {
 
 // helper functions
 
-void set_um_policy(const void *devPtr, size_t count, enum um_policy policy, int cnt_GPU) {
-    switch (policy) {
-    case UM:
-        fprintf(stderr, "um policy: UM\n");
-        break;
-    case PF:
-        fprintf(stderr, "um policy: PF\n");
-        int dev;
-        CUDA_RUNTIME(cudaGetDevice(&dev));
-        for (int i = 0; i < cnt_GPU; i++) {
-            CUDA_RUNTIME(cudaSetDevice(i));
-            cudaStream_t pf_stream;
-            CUDA_RUNTIME(cudaStreamCreate(&pf_stream));
-            CUDA_RUNTIME(cudaMemPrefetchAsync(devPtr, count, i, pf_stream));}
-        CUDA_RUNTIME(cudaSetDevice(dev));
-        break;
-    case AB:
-        fprintf(stderr, "um policy: AB to GPUs (0-%d)\n", cnt_GPU);
-        for (int i = 0; i < cnt_GPU; i++) {
-            CUDA_RUNTIME(cudaMemAdvise(devPtr, count, cudaMemAdviseSetAccessedBy, i));} 
-        break;
-    case AB_CPU:
-        fprintf(stderr, "um policy: AB_CPU\n");
-        CUDA_RUNTIME(cudaMemAdvise(devPtr, count, cudaMemAdviseSetAccessedBy, cudaCpuDeviceId));
-        break;
-    case PL:
-        fprintf(stderr, "um policy: PL\n");
-        for (int i = 0; i < cnt_GPU; i++) {
-            CUDA_RUNTIME(cudaMemAdvise(devPtr, count, cudaMemAdviseSetPreferredLocation, i));} // assume GPU0
-        break;
-    case PL_CPU:
-        fprintf(stderr, "um policy: PL_CPU\n");
-        CUDA_RUNTIME(cudaMemAdvise(devPtr, count, cudaMemAdviseSetPreferredLocation, cudaCpuDeviceId));    
-        break;
-    case RM:
-        fprintf(stderr, "um policy: RM\n");
-        CUDA_RUNTIME(cudaMemAdvise(devPtr, count, cudaMemAdviseSetReadMostly, 0));
-        break;
-    case PF_AB:
-        set_um_policy(devPtr, count, PF, cnt_GPU);
-        set_um_policy(devPtr, count, AB, cnt_GPU);
-        break;
-    case PF_AB_CPU:
-        set_um_policy(devPtr, count, PF, cnt_GPU);
-        set_um_policy(devPtr, count, AB_CPU, cnt_GPU);
-        break;
-    case PF_PL:
-        set_um_policy(devPtr, count, PF, cnt_GPU);
-        set_um_policy(devPtr, count, PL, cnt_GPU);
-        break;
-    case PF_PL_CPU:
-        set_um_policy(devPtr, count, PF, cnt_GPU);
-        set_um_policy(devPtr, count, PL_CPU, cnt_GPU);
-        break;
-    case PF_RM:
-        set_um_policy(devPtr, count, PF, cnt_GPU);
-        set_um_policy(devPtr, count, RM, cnt_GPU);
-        break;
-    case UM_TERM:
-    default:
-        fprintf(stderr, "um policy: TERM\n");        
-        break;        
-    }
-}
 
 
-cudaError_t MYcudaMallocManaged(void **devPtr, size_t size, enum um_policy policy=UM, int cnt_GPU=1)
+
+cudaError_t MYcudaMallocManaged(void **devPtr, size_t size, int cnt_GPU=1)
 {
     CUDA_RUNTIME(cudaMalloc(devPtr, size));
-    //set_um_policy(*devPtr, size, policy, cnt_GPU);
+    
     return cudaSuccess;
 }
 
@@ -254,3 +191,4 @@ cudaError_t EnablePeerAccess(int n)
 }
 
 #endif
+

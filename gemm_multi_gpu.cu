@@ -149,7 +149,10 @@ void gemmCuda(DATA_TYPE* A_gpu, DATA_TYPE* B_gpu, DATA_TYPE* C_gpu)
     dim3 block(DIM_THREAD_BLOCK_X, DIM_THREAD_BLOCK_Y);
     dim3 grid((size_t)(ceil( ((float)NI)/ ((float)block.x) )),(size_t)(ceil( ((float)NJ)/ ((float)block.y) )));
 
-    t_start = rtclock();
+    printf("grid : {%d, %d, %d} blocks.\n", grid.x, grid.y, grid.z);
+    printf("Blocks : {%d, %d, %d} threads.\n", block.x, block.y, block.z);
+
+    //t_start = rtclock();
 
     split_kernel(
         gemm_kernel, 
@@ -157,10 +160,10 @@ void gemmCuda(DATA_TYPE* A_gpu, DATA_TYPE* B_gpu, DATA_TYPE* C_gpu)
         A_gpu, B_gpu, C_gpu
     );
 
-    cudaDeviceSynchronize();
+    //cudaDeviceSynchronize();
 
-    t_end = rtclock();
-    fprintf(stdout, "GPU Runtime: %0.6lfs\n", t_end - t_start);   
+    //t_end = rtclock();
+    //fprintf(stdout, "GPU Runtime: %0.6lfs\n", t_end - t_start);   
 
 }
 	
@@ -182,9 +185,9 @@ int main(int argc, char *argv[])
     C = (DATA_TYPE*)malloc(NI*NJ*sizeof(DATA_TYPE)); 
     C_gpu_host = (DATA_TYPE*)malloc(NI*NJ*sizeof(DATA_TYPE)); 
 
-    MYcudaMallocManaged((void **)&A_gpu, sizeof(DATA_TYPE) * NI * NK, @um_A@, __n);
-    MYcudaMallocManaged((void **)&B_gpu, sizeof(DATA_TYPE) * NK * NJ, @um_B@, __n);
-    MYcudaMallocManaged((void **)&C_gpu, sizeof(DATA_TYPE) * NI * NJ, @um_C@, __n);
+    MYcudaMallocManaged((void **)&A_gpu, sizeof(DATA_TYPE) * NI * NK,__n);
+    MYcudaMallocManaged((void **)&B_gpu, sizeof(DATA_TYPE) * NK * NJ,__n);
+    MYcudaMallocManaged((void **)&C_gpu, sizeof(DATA_TYPE) * NI * NJ,__n);
 
     init(A, B, C, A_gpu, B_gpu, C_gpu);
     EnablePeerAccess(__n);
@@ -197,6 +200,7 @@ int main(int argc, char *argv[])
 	
     gemmCuda(A_gpu, B_gpu, C_gpu);
 
+    /*
     t_start = rtclock();	
     gemm(A, B, C);
     t_end = rtclock();
@@ -204,6 +208,8 @@ int main(int argc, char *argv[])
 	
     MycudaMemcpy(C_gpu_host, C_gpu, sizeof(DATA_TYPE) * NI * NJ);
     compareResults(C, C_gpu_host);
+
+    */
 
     free(A);
     free(B);  
@@ -213,4 +219,5 @@ int main(int argc, char *argv[])
     cudaFree(C_gpu);
     return 0;
 }
+
 

@@ -6,7 +6,7 @@ um_B="RM"
 um_C="UM"
 
 # problem size
-NI="2048"
+NI="512"
 
 [ ! -e "bin" ] && mkdir "bin"
 
@@ -29,3 +29,4 @@ for n in {1..4}; do
 
     rm $GEMM_SRC
 done
+
